@@ -238,7 +238,10 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
     }
 
     // Redirect for JWT-based OAuth2 authentication logout
-    private void handleJwtOAuth2Logout(HttpServletRequest request, HttpServletResponse response)
+    private void getRedirectJwt(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            JwtAuthenticationToken jwtAuthenticationToken)
             throws IOException {
         OAUTH2 oauth = securityProperties.getOauth2();
         String path = checkForErrors(request);
@@ -284,7 +287,7 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
             }
             logoutUrlBuilder
                     .append("post_logout_redirect_uri=")
-                    .append(response.encodeRedirectURL(redirectUrl));
+                    .append(URLEncoder.encode(redirectUrl, StandardCharsets.UTF_8));
 
             String logoutUrl = logoutUrlBuilder.toString();
             log.info("JWT-based OAuth2 logout URL: {}", logoutUrl);
@@ -317,6 +320,7 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
                 "keycloak".equalsIgnoreCase(oAuthToken.getAuthorizedClientRegistrationId());
         if (isKeycloak) {
             KeycloakProvider keycloak = oauth.getClient().getKeycloak();
+
             if (keycloak.getIssuer() != null && !keycloak.getIssuer().isBlank()) {
                 issuer = keycloak.getIssuer();
                 clientId = keycloak.getClientId();
@@ -350,7 +354,7 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
                 logoutUrlBuilder.append("id_token_hint=").append(idToken);
                 logoutUrlBuilder
                         .append("&post_logout_redirect_uri=")
-                        .append(response.encodeRedirectURL(redirectUrl));
+                        .append(URLEncoder.encode(redirectUrl, StandardCharsets.UTF_8));
 
                 // client_id is optional when id_token_hint is present, but included for
                 // compatibility
@@ -368,7 +372,7 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
                 }
                 logoutUrlBuilder
                         .append("post_logout_redirect_uri=")
-                        .append(response.encodeRedirectURL(redirectUrl));
+                        .append(URLEncoder.encode(redirectUrl, StandardCharsets.UTF_8));
 
                 log.warn("OIDC logout without id_token_hint - user may see confirmation screen");
             }
@@ -517,6 +521,7 @@ public class CustomLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler {
             ApplicationProperties.Security.OAUTH2 oauth, String issuer) {
         if (oauth != null && oauth.getClient() != null) {
             String configuredEndpoint = oauth.getClient().getEndSessionEndpoint();
+
             if (configuredEndpoint != null && !configuredEndpoint.isBlank()) {
                 log.debug("Using configured end_session_endpoint: {}", configuredEndpoint);
                 return configuredEndpoint;
